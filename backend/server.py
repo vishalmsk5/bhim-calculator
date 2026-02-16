@@ -37,7 +37,12 @@ db = client[db_name]
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 
 # Create the main app without a prefix
-app = FastAPI()
+app = FastAPI(title="Bhim Calculator API",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -61,7 +66,7 @@ api_router = APIRouter(prefix="/api")
 class StatusCheckCreate(BaseModel):
 client_name: str
 
-class VoiceCalculateRequest(BaseModel):
+class VoiceCalculateRequest(BaseMo)del):
 query: str
 
 class VoiceCalculateResponse(BaseModel):
