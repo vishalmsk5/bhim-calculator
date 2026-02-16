@@ -1129,6 +1129,10 @@ async def shutdown_db_client():
     except Exception as e:
         logger.error(f"Error during shutdown: {e}")
 
+# Root Route (IMPORTANT for Railway test)
+@app.get("/")
+async def home():
+    return {"message": "Bhim Calculator API Running Successfully 🚀"}
 # Routes एकत्र करा
 app.include_router(api_router)
 
