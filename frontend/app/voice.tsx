@@ -22,7 +22,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 //const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 //const BACKEND_URL = "http://127.0.0.1:8000"; // PC IP on same WiFi
-const BACKEND_URL = "http://192.168.0.105:8000";
+//const BACKEND_URL = "http://192.168.0.105:8000";
+//const BACKEND_URL = "http://127.0.0.1:8000";
+//const BACKEND_URL = "http://192.168.0.105:8000";
+const BACKEND_URL = "https://bhim-calculator-production.up.railway.app";
 
 export default function VoicePage() {
   const router = useRouter();

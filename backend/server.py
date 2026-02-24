@@ -1,3 +1,5 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -12,9 +14,20 @@ from datetime import datetime
 import httpx
 import re
 import math
+
+app = FastAPI()
+
 #from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -992,6 +1005,62 @@ else:
 raise HTTPException(status_code=500, detail="Currency conversion failed")
 """
 
+'''# Currency Converter
+@api_router.post("/currency/convert", response_model=CurrencyConvertResponse)
+async def convert_currency(request: CurrencyConvertRequest):
+    try:
+        # Use exchangerate-api.com free API
+        from_curr = request.from_currency.upper()
+        to_curr = request.to_currency.upper()
+
+        # Free API endpoint
+        #url = f"https://api.exchangerate-api.com/v4/latest/{from_curr}"
+        url = f"https://api.exchangerate.host/convert?from={from_curr}&to={to_curr}&amount={request.amount}"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            data = response.json()
+
+            if "rates" in data and to_curr in data["rates"]:
+                rate = data["rates"][to_curr]
+                result = request.amount * rate
+
+                return CurrencyConvertResponse(
+                    result=round(result, 2),
+                    from_currency=from_curr,
+                    to_currency=to_curr,
+                    amount=request.amount
+                )
+            else:
+                raise HTTPException(status_code=400, detail="Currency not found")
+
+    except Exception as e:
+        # Fallback to mock rates for demo
+        mock_rates = {
+            "USD": {"INR": 83.0, "EUR": 0.92, "GBP": 0.79, "JPY": 149.0},
+            "INR": {"USD": 0.012, "EUR": 0.011, "GBP": 0.0095, "JPY": 1.8},
+            "EUR": {"USD": 1.09, "INR": 90.0, "GBP": 0.86, "JPY": 162.0},
+            "GBP": {"USD": 1.27, "INR": 105.0, "EUR": 1.16, "JPY": 189.0},
+        }
+
+        from_curr = request.from_currency.upper()
+        to_curr = request.to_currency.upper()
+
+        if from_curr in mock_rates and to_curr in mock_rates[from_curr]:
+            rate = mock_rates[from_curr][to_curr]
+            result = request.amount * rate
+
+            return CurrencyConvertResponse(
+                result=round(result, 2),
+                from_currency=from_curr,
+                to_currency=to_curr,
+                amount=request.amount
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Currency conversion failed")
+'''
+
+# Currency Converter (LIVE Working Version)
 # Currency Converter
 @api_router.post("/currency/convert", response_model=CurrencyConvertResponse)
 async def convert_currency(request: CurrencyConvertRequest):
@@ -1044,8 +1113,8 @@ async def convert_currency(request: CurrencyConvertRequest):
             )
         else:
             raise HTTPException(status_code=500, detail="Currency conversion failed")
-
-
+        
+        
 # Calculation History
 #@api_router.get("/history")
 #async def get_calculation_history():
