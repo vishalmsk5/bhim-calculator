@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  Switch,
-  TouchableOpacity,
+  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  Switch, TouchableOpacity, Platform,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,149 +11,161 @@ import { useThemeStore } from '../store/useThemeStore';
 import { useLanguageStore } from '../store/useLanguageStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { themes, ThemeName } from '../constants/themes';
-import { languages, LanguageCode } from '../constants/languages';
 import { QuoteOfDay } from '../components/QuoteOfDay';
 import { BasicCalculator } from '../components/BasicCalculator';
 import { ScientificCalculator } from '../components/ScientificCalculator';
+import { LanguageScroller } from '../components/LanguageScroller';
+import { t } from '../constants/translations';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  BannerAd, BannerAdSize, InterstitialAd, AdEventType, TestIds,
+} from 'react-native-google-mobile-ads';
+
+const FLAG_GREEN = '#138808';
 
 export default function Index() {
-  const router = useRouter();
-  const { theme, themeName, setTheme } = useThemeStore();
-  const { language, setLanguage } = useLanguageStore();
-  const {
-    soundEnabled,
-    hapticEnabled,
-    jaiBlimGreeting,
-    showAmbedkarWatermark,
-    setSoundEnabled,
-    setHapticEnabled,
-    setJaiBlimGreeting,
-    setShowAmbedkarWatermark,
-    loadSettings,
-  } = useSettingsStore();
-  const [mode, setMode] = useState<'basic' | 'scientific'>('basic');
+  const interstitialUnitId = __DEV__
+    ? TestIds.INTERSTITIAL
+    : 'ca-app-pub-4355119717560830/9771091574';
 
-  // Load settings on app start
+  const interstitial = InterstitialAd.createForAdRequest(interstitialUnitId, {
+    requestNonPersonalizedAdsOnly: true,
+  });
+
   useEffect(() => {
-    loadSettings();
+    const showAdOnceADay = async () => {
+      const today = new Date().toDateString();
+      const lastAdDate = await AsyncStorage.getItem('LAST_AD_DATE');
+      if (lastAdDate !== today) {
+        const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
+          interstitial.show();
+          AsyncStorage.setItem('LAST_AD_DATE', today);
+        });
+        interstitial.load();
+        return () => unsubscribeLoaded();
+      }
+    };
+    showAdOnceADay();
   }, []);
 
-  // Show Jai Bhim greeting if enabled
+  const router = useRouter();
+  const { theme, themeName, setTheme } = useThemeStore();
+  const { language } = useLanguageStore();
+  const {
+    soundEnabled, hapticEnabled, jaiBlimGreeting, showAmbedkarWatermark,
+    setSoundEnabled, setHapticEnabled, setJaiBlimGreeting,
+    setShowAmbedkarWatermark, loadSettings,
+  } = useSettingsStore();
+
+  const [mode, setMode] = useState<'basic' | 'scientific'>('basic');
+
+  useEffect(() => { loadSettings(); }, []);
+
   useEffect(() => {
     if (jaiBlimGreeting) {
-      // Play greeting sound using expo-speech
-      Speech.speak('Jai Bhim! Welcome to Bhim Universal Calculator', {
-        language: 'en',
-        pitch: 1.0,
-        rate: 0.9,
+      Speech.speak('Welcome to Bhim Universal Calculator', {
+        language: 'en-IN', pitch: 1.0, rate: 0.9,
       });
-      console.log('🙏 Jai Bhim! Welcome to Bhim Universal Calculator');
     }
   }, [jaiBlimGreeting]);
 
-  // Handle toggle with haptic feedback
   const handleToggle = async (
     toggleFn: (value: boolean) => Promise<void>,
     currentValue: boolean
   ) => {
-    if (hapticEnabled) {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    if (hapticEnabled) await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await toggleFn(!currentValue);
+  };
+
+  // Theme display names - translated
+  const getThemeName = (name: ThemeName): string => {
+    switch (name) {
+      case 'deepBlue': return t('deepBlue', language);
+      case 'constitutionGold': return t('constitutionGold', language);
+      case 'nightMode': return t('nightMode', language);
+      case 'gradientGlow': return t('gradientGlow', language);
+      default: return name;
+    }
   };
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        {/* Babasaheb Watermark - shown behind all content */}
         {showAmbedkarWatermark && (
           <View style={styles.watermarkContainer}>
-            <Ionicons 
-              name="person" 
-              size={200} 
-              color={theme.textSecondary} 
-              style={styles.watermarkIcon}
-            />
-            <Text style={[styles.watermarkText, { color: theme.textSecondary }]}>
-              Dr. B.R. Ambedkar
-            </Text>
+            <Ionicons name="person" size={200} color={theme.textSecondary} style={styles.watermarkIcon} />
+            <Text style={[styles.watermarkText, { color: theme.textSecondary }]}>Dr. B.R. Ambedkar</Text>
           </View>
         )}
+
         <ScrollView style={styles.scrollView}>
-          {/* Header */}
-          <View style={[styles.header, { backgroundColor: theme.primary }]}>
+
+          {/* ── HEADER ── */}
+          <View style={styles.headerOrange}>
             <View style={styles.headerContent}>
-              <Ionicons name="calculator" size={32} color="#FFC107" />
-              <Text style={styles.title}>Bhim Universal Calculator</Text>
+              <Ionicons name="calculator" size={34} color="#FF6F00" style={styles.headerIcon3d} />
+              <Text style={styles.title3d}>{t('appName', language)}</Text>
             </View>
-            <Text style={styles.subtitle}>Inspired by Dr. B.R. Ambedkar</Text>
+            <Text style={styles.subtitle3d}>{t('appSubtitle', language)}</Text>
           </View>
 
-          {/* Quote of the Day */}
+          {/* ── QUOTE ── */}
           <View style={styles.quoteSection}>
             <QuoteOfDay />
           </View>
 
-          {/* Mode Switcher */}
+          {/* ── MODE SWITCHER ── */}
           <View style={styles.modeSwitcher}>
             <TouchableOpacity
               style={[
                 styles.modeButton,
-                mode === 'basic' && {
-                  backgroundColor: theme.primary,
-                  borderColor: theme.primary,
-                },
-                { borderColor: theme.border },
+                { borderColor: mode === 'basic' ? FLAG_GREEN : theme.border },
+                mode === 'basic' && { backgroundColor: FLAG_GREEN },
               ]}
               onPress={() => setMode('basic')}
             >
-              <Text
-                style={[
-                  styles.modeButtonText,
-                  { color: mode === 'basic' ? '#FFFFFF' : theme.text },
-                ]}
-              >
-                Basic
+              <Text style={[styles.modeButtonText, { color: mode === 'basic' ? '#FFFFFF' : theme.text }]}>
+                {t('basic', language)}
               </Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={[
                 styles.modeButton,
-                mode === 'scientific' && {
-                  backgroundColor: theme.primary,
-                  borderColor: theme.primary,
-                },
-                { borderColor: theme.border },
+                { borderColor: mode === 'scientific' ? FLAG_GREEN : theme.border },
+                mode === 'scientific' && { backgroundColor: FLAG_GREEN },
               ]}
               onPress={() => setMode('scientific')}
             >
-              <Text
-                style={[
-                  styles.modeButtonText,
-                  { color: mode === 'scientific' ? '#FFFFFF' : theme.text },
-                ]}
-              >
-                Scientific
+              <Text style={[styles.modeButtonText, { color: mode === 'scientific' ? '#FFFFFF' : theme.text }]}>
+                {t('scientific', language)}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Calculator */}
+          {/* ── LANGUAGE SCROLLER ── */}
+          <LanguageScroller />
+
+          {/* ── CALCULATOR ── */}
           <View style={styles.calculatorSection}>
             {mode === 'basic' ? <BasicCalculator /> : <ScientificCalculator />}
           </View>
 
-          {/* Quick Access Navigation */}
+          {/* ── QUICK ACCESS ── */}
           <View style={styles.quickAccess}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Access</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {t('quickAccess', language)}
+            </Text>
             <View style={styles.quickAccessGrid}>
               <TouchableOpacity
                 style={[styles.quickAccessCard, { backgroundColor: theme.surface }]}
                 onPress={() => router.push('/voice')}
               >
                 <Ionicons name="mic" size={32} color={theme.primary} />
-                <Text style={[styles.quickAccessText, { color: theme.text }]}>AI Voice</Text>
+                <Text style={[styles.quickAccessText, { color: theme.text }]}>
+                  {t('aiVoice', language)}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -167,7 +174,7 @@ export default function Index() {
               >
                 <Ionicons name="briefcase" size={32} color={theme.accent} />
                 <Text style={[styles.quickAccessText, { color: theme.text }]}>
-                  Business Tools
+                  {t('businessTools', language)}
                 </Text>
               </TouchableOpacity>
 
@@ -176,7 +183,9 @@ export default function Index() {
                 onPress={() => router.push('/explore')}
               >
                 <Ionicons name="apps" size={32} color={theme.primary} />
-                <Text style={[styles.quickAccessText, { color: theme.text }]}>Explore</Text>
+                <Text style={[styles.quickAccessText, { color: theme.text }]}>
+                  {t('explore', language)}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -184,14 +193,18 @@ export default function Index() {
                 onPress={() => router.push('/settings')}
               >
                 <Ionicons name="settings" size={32} color={theme.textSecondary} />
-                <Text style={[styles.quickAccessText, { color: theme.text }]}>Settings</Text>
+                <Text style={[styles.quickAccessText, { color: theme.text }]}>
+                  {t('settings', language)}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Theme Selector */}
+          {/* ── THEME SELECTOR ── */}
           <View style={styles.themeSelector}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Choose Theme</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {t('chooseTheme', language)}
+            </Text>
             <View style={styles.themeGrid}>
               {(Object.keys(themes) as ThemeName[]).map((name) => (
                 <TouchableOpacity
@@ -203,56 +216,67 @@ export default function Index() {
                   ]}
                   onPress={() => setTheme(name)}
                 >
-                  <Text style={styles.themeName}>
-                    {name === 'deepBlue'
-                      ? 'Deep Blue'
-                      : name === 'constitutionGold'
-                      ? 'Constitution Gold'
-                      : name === 'nightMode'
-                      ? 'Night Mode'
-                      : 'Gradient Glow'}
-                  </Text>
+                  <Text style={styles.themeName}>{getThemeName(name)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          {/* Settings Preview */}
+          {/* ── QUICK SETTINGS ── */}
           <View style={[styles.settingsPreview, { backgroundColor: theme.surface }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Settings</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {t('quickSettings', language)}
+            </Text>
             <View style={styles.settingRow}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>Sound Feedback</Text>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>
+                {t('soundFeedback', language)}
+              </Text>
               <Switch
                 value={soundEnabled}
                 onValueChange={() => handleToggle(setSoundEnabled, soundEnabled)}
-                trackColor={{ false: theme.border, true: theme.primary }}
+                trackColor={{ false: theme.border, true: FLAG_GREEN }}
               />
             </View>
             <View style={styles.settingRow}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>Haptic Feedback</Text>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>
+                {t('hapticFeedback', language)}
+              </Text>
               <Switch
                 value={hapticEnabled}
                 onValueChange={() => handleToggle(setHapticEnabled, hapticEnabled)}
-                trackColor={{ false: theme.border, true: theme.primary }}
+                trackColor={{ false: theme.border, true: FLAG_GREEN }}
               />
             </View>
             <View style={styles.settingRow}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>Jai Bhim Greeting</Text>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>
+                {t('welcomeGreeting', language)}
+              </Text>
               <Switch
                 value={jaiBlimGreeting}
                 onValueChange={() => handleToggle(setJaiBlimGreeting, jaiBlimGreeting)}
-                trackColor={{ false: theme.border, true: theme.primary }}
+                trackColor={{ false: theme.border, true: FLAG_GREEN }}
               />
             </View>
           </View>
 
-          {/* Footer */}
+          {/* ── AD BANNER ── */}
+          {Platform.OS !== 'web' && (
+            <View style={{ alignItems: 'center', marginVertical: 15 }}>
+              <BannerAd
+                unitId={'ca-app-pub-4355119717560830/2219904613'}
+                size={BannerAdSize.BANNER}
+                requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+              />
+            </View>
+          )}
+
+          {/* ── FOOTER ── */}
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-              “Educate, Agitate, Organize”
+              {t('educateAgitateOrganize', language)}
             </Text>
             <Text style={[styles.footerSubtext, { color: theme.textSecondary }]}>
-              Free Forever • Made with ❤️ for Everyone
+              {t('freeForeever', language)}
             </Text>
           </View>
         </ScrollView>
@@ -262,158 +286,66 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  scrollView: { flex: 1 },
+  headerOrange: {
+    padding: 24, paddingTop: 20,
+    borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
+    backgroundColor: '#E65100',
+    shadowColor: '#FF6F00', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6, shadowRadius: 12, elevation: 14,
   },
-  scrollView: {
-    flex: 1,
+  headerContent: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
+  headerIcon3d: {
+    textShadowColor: '#BF360C', textShadowOffset: { width: 2, height: 3 }, textShadowRadius: 4,
   },
-  header: {
-    padding: 24,
-    paddingTop: 16,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+  title3d: {
+    fontSize: 18, fontWeight: 'bold', color: '#FFE0B2', flex: 1,
+    textShadowColor: '#BF360C', textShadowOffset: { width: 1, height: 2 }, textShadowRadius: 3,
   },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
+  subtitle3d: {
+    fontSize: 13, color: '#FFCC80', fontStyle: 'italic',
+    textShadowColor: '#BF360C', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    flex: 1,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#FFC107',
-    fontStyle: 'italic',
-  },
-  quoteSection: {
-    paddingHorizontal: 16,
-  },
-  modeSwitcher: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginVertical: 16,
-    gap: 12,
-  },
+  quoteSection: { paddingHorizontal: 16 },
+  modeSwitcher: { flexDirection: 'row', marginHorizontal: 16, marginVertical: 12, gap: 12 },
   modeButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 2,
+    flex: 1, padding: 12, borderRadius: 12, alignItems: 'center', borderWidth: 2,
+    shadowColor: '#138808', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2, shadowRadius: 4, elevation: 3,
   },
-  modeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  calculatorSection: {
-    minHeight: 500,
-    marginBottom: 24,
-  },
-  quickAccess: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  quickAccessGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
+  modeButtonText: { fontSize: 15, fontWeight: '700' },
+  calculatorSection: { minHeight: 500, marginBottom: 24 },
+  quickAccess: { paddingHorizontal: 16, marginBottom: 24 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 14 },
+  quickAccessGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   quickAccessCard: {
-    width: '47%',
-    padding: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    width: '47%', padding: 20, borderRadius: 16, alignItems: 'center',
+    elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 4,
   },
-  quickAccessText: {
-    marginTop: 8,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  themeSelector: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  themeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
+  quickAccessText: { marginTop: 8, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  themeSelector: { paddingHorizontal: 16, marginBottom: 24 },
+  themeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   themeCard: {
-    width: '47%',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'transparent',
+    width: '47%', padding: 16, borderRadius: 12, alignItems: 'center',
+    borderWidth: 3, borderColor: 'transparent',
   },
-  selectedTheme: {
-    borderColor: '#FFC107',
-  },
-  themeName: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  settingsPreview: {
-    marginHorizontal: 16,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 24,
-  },
+  selectedTheme: { borderColor: '#FFC107' },
+  themeName: { color: '#FFFFFF', fontWeight: '600', fontSize: 13, textAlign: 'center' },
+  settingsPreview: { marginHorizontal: 16, padding: 16, borderRadius: 16, marginBottom: 24 },
   settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingVertical: 12,
   },
-  settingLabel: {
-    fontSize: 16,
-  },
-  footer: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  footerSubtext: {
-    fontSize: 12,
-  },
+  settingLabel: { fontSize: 15, flex: 1, marginRight: 8 },
+  footer: { padding: 24, alignItems: 'center' },
+  footerText: { fontSize: 15, fontWeight: '600', marginBottom: 4, textAlign: 'center' },
+  footerSubtext: { fontSize: 12, textAlign: 'center' },
   watermarkContainer: {
-    position: 'absolute',
-    top: '30%',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: 0.08,
-    zIndex: 0,
+    position: 'absolute', top: '30%', left: 0, right: 0,
+    alignItems: 'center', justifyContent: 'center', opacity: 0.08, zIndex: 0,
   },
-  watermarkIcon: {
-    opacity: 0.5,
-  },
-  watermarkText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 16,
-    opacity: 0.7,
-  },
+  watermarkIcon: { opacity: 0.5 },
+  watermarkText: { fontSize: 24, fontWeight: 'bold', marginTop: 16, opacity: 0.7 },
 });

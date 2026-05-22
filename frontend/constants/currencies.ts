@@ -67,7 +67,7 @@ export const worldCurrencies = [
   { code: 'HRK', name: 'Croatian Kuna', symbol: 'kn', flag: '🇭🇷' },
   { code: 'RSD', name: 'Serbian Dinar', symbol: 'дин', flag: '🇷🇸' },
   { code: 'UAH', name: 'Ukrainian Hryvnia', symbol: '₴', flag: '🇺🇦' },
-  { code: 'RUB', name: 'Russian Ruble', symbol: '₽', flag: '🇷🇺' },
+
   { code: 'BYN', name: 'Belarusian Ruble', symbol: 'Br', flag: '🇧🇾' },
   { code: 'MDL', name: 'Moldovan Leu', symbol: 'L', flag: '🇲🇩' },
   { code: 'GEL', name: 'Georgian Lari', symbol: '₾', flag: '🇬🇪' },
@@ -77,7 +77,7 @@ export const worldCurrencies = [
   { code: 'BAM', name: 'Bosnia Mark', symbol: 'KM', flag: '🇧🇦' },
   { code: 'MKD', name: 'Macedonian Denar', symbol: 'ден', flag: '🇲🇰' },
   { code: 'ALL', name: 'Albanian Lek', symbol: 'L', flag: '🇦🇱' },
-  
+    { code: 'RUB', name: 'Russian Ruble', symbol: '₽', flag: '🇷🇺' },
   // Americas
   { code: 'CAD', name: 'Canadian Dollar', symbol: '$', flag: '🇨🇦' },
   { code: 'MXN', name: 'Mexican Peso', symbol: '$', flag: '🇲🇽' },

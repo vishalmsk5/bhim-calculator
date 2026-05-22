@@ -1,14 +1,12 @@
 {
   "cli": {
-    "version": ">= 5.2.0"
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "android": {
-        "gradleCommand": ":app:assembleDebug"
-      }
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal",
@@ -16,11 +14,12 @@
         "buildType": "apk"
       }
     },
-    "production": {
-      "android": {
-        "buildType": "aab"
-      }
-    }
+ "production": {
+  "node": "20.18.0",
+  "android": {
+    "buildType": "app-bundle"
+  }
+}
   },
   "submit": {
     "production": {}
